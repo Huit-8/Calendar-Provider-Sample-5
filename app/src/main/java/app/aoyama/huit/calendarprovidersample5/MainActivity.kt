@@ -128,7 +128,10 @@ class MainActivity : AppCompatActivity() {
         // sortOrder書き換えれば、順番を指定できそう
         val cur: Cursor? = cr.query(uri, EVENT_PROJECTION, selection, selectionArgs, null)
 
-        var textStr = "eventId, イベントタイトル,開始時間,終了時間, 詳細\n"
+        var textStr = "eventId, イベントタイトル,開始時間,終了時間,開始時刻,終了時刻,期間,詳細\n"
+        val durationList: MutableList<Long> = mutableListOf()
+        var durationSum = 0f
+
         while (cur?.moveToNext() == true) {
             // カーソルから各プロパティを取得する
             val eventId: Long = cur.getLong(EVENT_PROJECTION_IDX_EVENT_ID)
@@ -152,16 +155,70 @@ class MainActivity : AppCompatActivity() {
             val organizer: String? = cur.getString(EVENT_PROJECTION_IDX_ORGANIZER)
             val calenderId: Long = cur.getLong(EVENT_PROJECTION_IDX_CALENDAR_ID)
 
+            val unixTime: Long = System.currentTimeMillis()
+
+            val duration2 = dtEnd - dtStart
+            //期間の秒表示
+            val duration3 = duration2 / 1000
+            //期間の分表示
+            val duration4 = duration3 / 60
+            //期間の時間表示
+            val duration5 = duration4 / 60
+
+            val hour1 = "07"
+            val minute1 = "00"
+            val hour2 = "21"
+            val minute2 = "30"
+
+            //予定が何時から何時やねんっていう話
+            val startTime1 = dtStart / 1000
+            //日本時間に直して、0時から何秒経過しているか求める
+            val startTime2 = (startTime1 + 32400) % 86400
+            //0時からの経過時間（秒）を3600秒で割って何時かを求める
+            val startTime3 = startTime2 / 3600
+            //3600で割った時に余りがある時は、30分を追加する
+            val startTime4 = startTime2.toInt()
+            var startTime6 = 0
+            if (startTime4 % 3600 != 0) {
+                startTime6 = 30
+            }
+            val actualStartTime = "$startTime3:$startTime6"
+
+            //次は終了時間書いていくよ
+            val endTime1 = dtEnd / 1000
+            val endTime2 = (endTime1 + 32400) % 86400
+            val endTime3 = endTime2 / 3600
+            //3600で割ったときに余りがある場合は30分を追加する
+            val endTime4 = endTime2.toInt()
+            var endTime5 = 0
+            if (endTime4 % 3600 != 0) {
+                endTime5 = 30
+            }
+            val actualEndTime = "$endTime3:$endTime5"
+
             // タイトルが無いものは、表示しない
             if (title.isNotEmpty()) {
-                textStr += "$eventId, "
-                textStr += "$title, "
-                textStr += "$dtStart,"
-                textStr += "$dtEnd,"
-                textStr += "$description\n"
+                //今日以降のデータを表示する
+                if (dtStart >= unixTime) {
+                    //期限までのイベントを表示する
+                    //アクティブタイムにかかるイベントだけ表示する
+                    textStr += "$eventId, "
+                    textStr += "$title, "
+                    textStr += "$dtStart,"
+                    textStr += "$dtEnd,"
+                    textStr += "$actualStartTime,"
+                    textStr += "$actualEndTime,"
+                    textStr += "$duration5,"
+                    textStr += "$description\n"
+                    durationList += duration5
+
+                    durationSum = durationList.sum().toFloat()
+                }
             }
         }
         binding.textView.text = textStr
+        println(durationList)
+        println(durationSum)
     }
 
     // 端末内に入ってるカレンダー情報をすべて取得する動作確認用メソッド
